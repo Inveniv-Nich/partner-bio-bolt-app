@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Grid2x2 as Grid, Heart, MessageCircle, UserPlus, Share, MoreHorizontal } from 'lucide-react-native';
+import { ArrowLeft, Grid2x2 as Grid, Heart, MessageCircle, UserPlus, Share, MoveHorizontal as MoreHorizontal } from 'lucide-react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 

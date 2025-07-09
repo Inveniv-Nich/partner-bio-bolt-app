@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Filter, TrendingUp } from 'lucide-react-native';
+import PublicProfileCard from '@/components/PublicProfileCard';
 
 export default function SearchTab() {
   const trendingTopics = [
@@ -65,6 +66,31 @@ export default function SearchTab() {
     { name: 'Videos', active: false },
     { name: 'People', active: false },
     { name: 'Places', active: false },
+  ];
+
+  // Mock user data for demonstration
+  const suggestedUsers = [
+    {
+      id: 'user-001',
+      name: 'Dr. Sarah Chen',
+      role: 'Research Scientist',
+      organization: 'Stanford University',
+      isOnline: true,
+    },
+    {
+      id: 'user-002',
+      name: 'Marcus Rodriguez',
+      role: 'Product Manager',
+      organization: 'Tech Innovations Inc.',
+      isOnline: false,
+    },
+    {
+      id: 'user-003',
+      name: 'Dr. Emily Watson',
+      role: 'Clinical Researcher',
+      organization: 'Medical Research Center',
+      isOnline: true,
+    },
   ];
 
   return (
@@ -134,6 +160,23 @@ export default function SearchTab() {
         </View>
 
         {/* Explore Grid */}
+        {/* Suggested People Section */}
+        <View style={styles.exploreSection}>
+          <Text style={styles.sectionTitle}>Suggested People</Text>
+          <View style={styles.peopleContainer}>
+            {suggestedUsers.map((user) => (
+              <PublicProfileCard
+                key={user.id}
+                id={user.id}
+                name={user.name}
+                role={user.role}
+                organization={user.organization}
+                isOnline={user.isOnline}
+              />
+            ))}
+          </View>
+        </View>
+
         <View style={styles.exploreSection}>
           <Text style={styles.sectionTitle}>Explore</Text>
           <View style={styles.exploreGrid}>
@@ -282,6 +325,10 @@ const styles = StyleSheet.create({
   },
   exploreSection: {
     paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  peopleContainer: {
+    marginBottom: 16,
   },
   exploreGrid: {
     flexDirection: 'row',

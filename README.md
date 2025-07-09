@@ -1,0 +1,1 @@
+This is a react native expo application for Partner.Bio.

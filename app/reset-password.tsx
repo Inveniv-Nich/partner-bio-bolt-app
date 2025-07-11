@@ -16,11 +16,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 
 export default function ResetPasswordScreen() {
-  const { access_token, refresh_token } = useLocalSearchParams<{
-    access_token?: string;
-    refresh_token?: string;
-  }>();
-  
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,21 +24,48 @@ export default function ResetPasswordScreen() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [sessionError, setSessionError] = useState(false);
+  const [tokens, setTokens] = useState<{
+    access_token?: string;
+    refresh_token?: string;
+  }>({});
 
   useEffect(() => {
-    // Set the session using the tokens from the URL
-    if (access_token && refresh_token) {
+    // Parse tokens from both query parameters and URL fragments
+    const parseTokensFromUrl = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      
+      // Try to get tokens from query parameters first
+      let accessToken = urlParams.get('access_token');
+      let refreshToken = urlParams.get('refresh_token');
+      
+      // If not found in query params, try URL fragment (more common with Supabase)
+      if (!accessToken || !refreshToken) {
+        accessToken = hashParams.get('access_token');
+        refreshToken = hashParams.get('refresh_token');
+      }
+      
+      return { accessToken, refreshToken };
+    };
+
+    const { accessToken, refreshToken } = parseTokensFromUrl();
+    
+    if (accessToken && refreshToken) {
+      setTokens({ access_token: accessToken, refresh_token: refreshToken });
+      
+      // Set the session using the tokens from the URL
       supabase.auth.setSession({
-        access_token,
-        refresh_token,
+        access_token: accessToken,
+        refresh_token: refreshToken,
       }).catch((error) => {
         console.error('Error setting session:', error);
         setSessionError(true);
       });
     } else {
+      console.error('No valid tokens found in URL');
       setSessionError(true);
     }
-  }, [access_token, refresh_token]);
+  }, []);
 
   const validatePassword = (pwd: string) => {
     const minLength = pwd.length >= 8;

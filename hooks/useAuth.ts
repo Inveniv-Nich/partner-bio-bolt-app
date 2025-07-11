@@ -17,7 +17,7 @@ const fetchAndEnrichUser = async (user: User): Promise<EnrichedUser> => {
   try {
     const { data: userData, error } = await supabase
       .from('users')
-      .select('avatar_url, name')
+      .select('avatar_url, name, age, created_at')
       .eq('id', user.id)
       .single();
 

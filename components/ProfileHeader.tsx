@@ -55,7 +55,8 @@ export default function ProfileHeader() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.7,
+        base64: false,
       });
 
       if (!result.canceled && result.assets[0]) {
@@ -77,16 +78,29 @@ export default function ProfileHeader() {
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
-      // Convert image URI to blob for upload
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
+      // For web, convert image URI to blob
+      let fileData;
+      if (imageUri.startsWith('blob:') || imageUri.startsWith('data:')) {
+        const response = await fetch(imageUri);
+        fileData = await response.blob();
+      } else {
+        // For mobile, create FormData
+        const formData = new FormData();
+        formData.append('file', {
+          uri: imageUri,
+          type: `image/${fileExt}`,
+          name: fileName,
+        } as any);
+        fileData = formData;
+      }
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from('avatars')
-        .upload(filePath, blob, {
+        .upload(filePath, fileData, {
           cacheControl: '3600',
           upsert: false,
+          contentType: `image/${fileExt}`,
         });
 
       if (error) {

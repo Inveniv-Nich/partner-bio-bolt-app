@@ -2,6 +2,49 @@ import { useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/utils/supabase';
 
+// Enhanced user type that includes data from public.users table
+interface EnrichedUser extends User {
+  user_metadata: User['user_metadata'] & {
+    avatar_url?: string;
+    full_name?: string;
+    role?: string;
+    organization?: string;
+  };
+}
+
+// Function to fetch and enrich user data with public.users table data
+const fetchAndEnrichUser = async (user: User): Promise<EnrichedUser> => {
+  try {
+    const { data: userData, error } = await supabase
+      .from('users')
+      .select('avatar_url, name, role, organization')
+      .eq('id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching user data:', error);
+      return user as EnrichedUser;
+    }
+
+    // Merge public.users data into user_metadata
+    const enrichedUser: EnrichedUser = {
+      ...user,
+      user_metadata: {
+        ...user.user_metadata,
+        avatar_url: userData?.avatar_url || user.user_metadata?.avatar_url,
+        full_name: userData?.name || user.user_metadata?.full_name,
+        role: userData?.role || user.user_metadata?.role,
+        organization: userData?.organization || user.user_metadata?.organization,
+      },
+    };
+
+    return enrichedUser;
+  } catch (error) {
+    console.error('Unexpected error enriching user data:', error);
+    return user as EnrichedUser;
+  }
+};
+
 // Function to create user record in public.users table
 const createUserRecord = async (user: User) => {
   try {
@@ -23,6 +66,7 @@ const createUserRecord = async (user: User) => {
       // Extract onboarding data from user metadata
       const role = user.user_metadata?.role || null;
       const organization = user.user_metadata?.organization || null;
+      const avatarUrl = user.user_metadata?.avatar_url || null;
       
       const { error: insertError } = await supabase
         .from('users')
@@ -32,6 +76,7 @@ const createUserRecord = async (user: User) => {
           name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
           role: role,
           organization: organization,
+          avatar_url: avatarUrl,
           age: null, // Will be updated later if needed
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -46,11 +91,13 @@ const createUserRecord = async (user: User) => {
       // User exists, but check if we need to update role/organization from metadata
       const role = user.user_metadata?.role;
       const organization = user.user_metadata?.organization;
+      const avatarUrl = user.user_metadata?.avatar_url;
       
-      if (role || organization) {
+      if (role || organization || avatarUrl) {
         const updateData: any = { updated_at: new Date().toISOString() };
         if (role) updateData.role = role;
         if (organization) updateData.organization = organization;
+        if (avatarUrl) updateData.avatar_url = avatarUrl;
         
         const { error: updateError } = await supabase
           .from('users')
@@ -71,7 +118,7 @@ const createUserRecord = async (user: User) => {
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<EnrichedUser | null>(null);
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
 
@@ -80,15 +127,23 @@ export function useAuth() {
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted.current) {
+      if (mounted.current && session?.user) {
+        fetchAndEnrichUser(session.user).then((enrichedUser) => {
+          if (mounted.current) {
+            setSession(session);
+            setUser(enrichedUser);
+            setLoading(false);
+            
+            // Create user record if user is confirmed
+            if (session.user.email_confirmed_at) {
+              createUserRecord(session.user);
+            }
+          }
+        });
+      } else if (mounted.current) {
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser(null);
         setLoading(false);
-        
-        // Create user record if session exists and user is confirmed
-        if (session?.user && session.user.email_confirmed_at) {
-          createUserRecord(session.user);
-        }
       }
     });
 
@@ -96,15 +151,23 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (mounted.current) {
+      if (mounted.current && session?.user) {
+        fetchAndEnrichUser(session.user).then((enrichedUser) => {
+          if (mounted.current) {
+            setSession(session);
+            setUser(enrichedUser);
+            setLoading(false);
+            
+            // Create user record on SIGNED_IN event if user is confirmed
+            if (event === 'SIGNED_IN' && session.user.email_confirmed_at) {
+              createUserRecord(session.user);
+            }
+          }
+        });
+      } else if (mounted.current) {
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser(null);
         setLoading(false);
-        
-        // Create user record on SIGNED_IN event if user is confirmed
-        if (event === 'SIGNED_IN' && session?.user && session.user.email_confirmed_at) {
-          createUserRecord(session.user);
-        }
       }
     });
 
@@ -121,10 +184,18 @@ export function useAuth() {
     }
   };
 
+  const refreshUser = async () => {
+    if (session?.user) {
+      const enrichedUser = await fetchAndEnrichUser(session.user);
+      setUser(enrichedUser);
+    }
+  };
+
   return {
     session,
     user,
     loading,
     signOut,
+    refreshUser,
   };
 }

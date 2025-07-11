@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Eye, EyeOff, Lock, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, Eye, EyeOff, Lock, CircleCheck as CheckCircle } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 

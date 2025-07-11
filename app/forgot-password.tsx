@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Mail, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, Mail, CircleCheck as CheckCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 

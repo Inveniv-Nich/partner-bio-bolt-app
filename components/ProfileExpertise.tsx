@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Edit } from 'lucide-react-native';
+import { CreditCard as Edit } from 'lucide-react-native';
 
 export default function ProfileExpertise() {
   const handleEdit = () => {

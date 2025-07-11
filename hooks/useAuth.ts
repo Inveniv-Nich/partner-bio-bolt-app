@@ -17,7 +17,7 @@ const fetchAndEnrichUser = async (user: User): Promise<EnrichedUser> => {
   try {
     const { data: userData, error } = await supabase
       .from('users')
-      .select('avatar_url, name, role, organization')
+      .select('avatar_url, name')
       .eq('id', user.id)
       .single();
 
@@ -33,8 +33,8 @@ const fetchAndEnrichUser = async (user: User): Promise<EnrichedUser> => {
         ...user.user_metadata,
         avatar_url: userData?.avatar_url || user.user_metadata?.avatar_url,
         full_name: userData?.name || user.user_metadata?.full_name,
-        role: userData?.role || user.user_metadata?.role,
-        organization: userData?.organization || user.user_metadata?.organization,
+        role: user.user_metadata?.role,
+        organization: user.user_metadata?.organization,
       },
     };
 
@@ -74,8 +74,6 @@ const createUserRecord = async (user: User) => {
           id: user.id,
           email: user.email!,
           name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-          role: role,
-          organization: organization,
           avatar_url: avatarUrl,
           age: null, // Will be updated later if needed
           created_at: new Date().toISOString(),
@@ -85,18 +83,14 @@ const createUserRecord = async (user: User) => {
       if (insertError) {
         console.error('Error creating user record:', insertError);
       } else {
-        console.log('User record created successfully for:', user.email, 'with role:', role, 'and organization:', organization);
+        console.log('User record created successfully for:', user.email);
       }
     } else {
       // User exists, but check if we need to update role/organization from metadata
-      const role = user.user_metadata?.role;
-      const organization = user.user_metadata?.organization;
       const avatarUrl = user.user_metadata?.avatar_url;
       
-      if (role || organization || avatarUrl) {
+      if (avatarUrl) {
         const updateData: any = { updated_at: new Date().toISOString() };
-        if (role) updateData.role = role;
-        if (organization) updateData.organization = organization;
         if (avatarUrl) updateData.avatar_url = avatarUrl;
         
         const { error: updateError } = await supabase
@@ -107,7 +101,7 @@ const createUserRecord = async (user: User) => {
         if (updateError) {
           console.error('Error updating user record:', updateError);
         } else {
-          console.log('User record updated with onboarding data for:', user.email);
+          console.log('User record updated with avatar for:', user.email);
         }
       }
     }

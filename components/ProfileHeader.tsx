@@ -143,8 +143,6 @@ export default function ProfileHeader() {
         .from('users')
         .update({
           name: editFullName,
-          role: editRole,
-          organization: editOrganization,
           avatar_url: avatarUrl,
           updated_at: new Date().toISOString(),
         })
